@@ -1,0 +1,131 @@
+{
+  "name": "Delete Contact",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "contacts/:id",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-delete",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "delete-contact"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM \"Contact\" WHERE id = $1 AND \"userId\" = $2",
+        "additionalFields": {
+          "queryParams": "={{ [$json.params.id, $json.headers['x-user-id']] }}"
+        }
+      },
+      "id": "postgres-check",
+      "name": "Check Ownership",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "MiniCRM Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $items().length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-exists",
+      "name": "Contact Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM \"Contact\" WHERE id = $1 AND \"userId\" = $2",
+        "additionalFields": {
+          "queryParams": "={{ [$node['Webhook'].json.params.id, $node['Webhook'].json.headers['x-user-id']] }}"
+        }
+      },
+      "id": "postgres-delete",
+      "name": "Delete Contact",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [900, 180],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "MiniCRM Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 204
+        }
+      },
+      "id": "respond-204",
+      "name": "Respond 204",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Contato não encontrado\" }",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "id": "respond-404",
+      "name": "Respond 404",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 420]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Check Ownership", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Ownership": {
+      "main": [
+        [{ "node": "Contact Exists?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Contact Exists?": {
+      "main": [
+        [{ "node": "Delete Contact", "type": "main", "index": 0 }],
+        [{ "node": "Respond 404", "type": "main", "index": 0 }]
+      ]
+    },
+    "Delete Contact": {
+      "main": [
+        [{ "node": "Respond 204", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

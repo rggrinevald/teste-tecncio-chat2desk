@@ -1,0 +1,22 @@
+name = "minicrm-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-07-25"
+compatibility_flags = ["nodejs_compat"]
+
+# Variáveis públicas (não sensíveis)
+[vars]
+CORS_ORIGIN = "http://localhost:5173"
+AUTH_SERVICE_URL = "http://auth.localhost"
+N8N_URL = "http://n8n.localhost"
+
+# Ambiente de produção
+# AUTH_SERVICE_URL e N8N_URL devem apontar para as URLs do Cloudflare Tunnel
+# Ex: https://auth.seu-subdominio.trycloudflare.com
+[env.production]
+[env.production.vars]
+CORS_ORIGIN = "https://minicrm-frontend.pages.dev"
+AUTH_SERVICE_URL = "https://auth.seu-tunnel.cloudflareaccess.com"
+N8N_URL = "https://n8n.seu-tunnel.cloudflareaccess.com"
+
+# JWT_SECRET é configurado como secret via:
+# wrangler secret put JWT_SECRET

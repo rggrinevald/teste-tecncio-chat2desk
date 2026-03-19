@@ -1,0 +1,84 @@
+{
+  "name": "List Contacts",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "contacts",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-list",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "list-contacts"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"Contact\" WHERE \"userId\" = $1 ORDER BY \"createdAt\" DESC",
+        "additionalFields": {
+          "queryParams": "={{ [$json.headers['x-user-id']] }}"
+        }
+      },
+      "id": "postgres-select",
+      "name": "Fetch Contacts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "MiniCRM Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst contacts = items.map(item => item.json);\nreturn [{ json: contacts }];"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Fetch Contacts", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Contacts": {
+      "main": [
+        [{ "node": "Aggregate Array", "type": "main", "index": 0 }]
+      ]
+    },
+    "Aggregate Array": {
+      "main": [
+        [{ "node": "Respond 200", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
