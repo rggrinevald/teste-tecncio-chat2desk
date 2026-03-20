@@ -1,0 +1,82 @@
+{
+  "name": "Restore Contact",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "PATCH",
+        "path": "contacts-restore",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-restore",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "restore-contact"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE \"Contact\" SET \"deletedAt\" = NULL, \"updatedAt\" = NOW() WHERE id = '{{ $json.headers[\"x-contact-id\"] }}' AND \"userId\" = '{{ $json.headers[\"x-user-id\"] }}'",
+        "additionalFields": {}
+      },
+      "id": "postgres-restore",
+      "name": "Restore Contact",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "MiniCRM Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ 'contacts:' + $node['Webhook'].json.headers['x-user-id'] }}"
+      },
+      "id": "redis-invalidate-restore",
+      "name": "Invalidate Cache",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "redis": {
+          "id": "2",
+          "name": "MiniCRM Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 204
+        }
+      },
+      "id": "respond-204",
+      "name": "Respond 204",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Restore Contact", "type": "main", "index": 0 }]]
+    },
+    "Restore Contact": {
+      "main": [[{ "node": "Invalidate Cache", "type": "main", "index": 0 }]]
+    },
+    "Invalidate Cache": {
+      "main": [[{ "node": "Respond 204", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

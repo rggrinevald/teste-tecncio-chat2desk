@@ -43,7 +43,7 @@ api.interceptors.response.use(
 
     const originalRequest = error.config as (typeof error.config) & { _retry?: boolean }
 
-    if (error.response?.status === 401 && !originalRequest?._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry && !originalRequest?.url?.includes('/auth/')) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })

@@ -2,6 +2,13 @@
 
 Sistema simplificado de gestão de contatos com autenticação, painel web e automações — desenvolvido como teste técnico para a vaga de Desenvolvedor(a) na Chat2Desk.
 
+## URLs de Produção
+
+| Serviço | URL |
+| ------- | --- |
+| Frontend | https://minicrm-frontend-39h.pages.dev |
+| API Gateway | https://minicrm-gateway-production.romulogrinevald.workers.dev |
+
 ## Arquitetura
 
 ```
@@ -81,6 +88,7 @@ O serviço `migrate` roda automaticamente e cria as tabelas no banco.
    - `n8n/workflows/list-contacts.json`
    - `n8n/workflows/create-contact.json`
    - `n8n/workflows/delete-contact.json`
+   - `n8n/workflows/restore-contact.json`
 
 4. Abra cada workflow e clique em **Publish**
 
@@ -121,14 +129,14 @@ npm run dev
 
 ## URLs Locais
 
-| Serviço           | URL                   | Credenciais             |
-| ----------------- | --------------------- | ----------------------- |
-| Frontend          | http://localhost:5173 | —                       |
-| API Gateway       | http://localhost:8787 | —                       |
-| Auth Service      | http://auth.localhost | —                       |
-| n8n               | http://n8n.localhost  | admin / admin_password  |
-| pgAdmin           | http://localhost:5050 | admin@admin.com / admin |
-| Traefik Dashboard | http://localhost:8080 | —                       |
+| Serviço           | URL                   | Credenciais                |
+| ----------------- | --------------------- | -------------------------- |
+| Frontend          | http://localhost:5173 | —                          |
+| API Gateway       | http://localhost:8787 | —                          |
+| Auth Service      | http://auth.localhost | —                          |
+| n8n               | http://n8n.localhost  | admin@admin.com / Admin123 |
+| pgAdmin           | http://localhost:5050 | admin@admin.com / admin    |
+| Traefik Dashboard | http://localhost:8080 | —                          |
 
 ---
 
@@ -193,7 +201,8 @@ minicrm-teste-nutek/
 ├── n8n/workflows/              # Workflows exportados em JSON
 │   ├── list-contacts.json
 │   ├── create-contact.json
-│   └── delete-contact.json
+│   ├── delete-contact.json
+│   └── restore-contact.json
 ├── .github/workflows/          # CI/CD com GitHub Actions
 │   ├── deploy-worker.yml       # Deploy do Worker na Cloudflare
 │   └── deploy-frontend.yml     # Deploy do Frontend no Cloudflare Pages
@@ -217,19 +226,26 @@ minicrm-teste-nutek/
 
 ### Contatos (`/contacts/*`) — via n8n
 
-| Método | Rota            | Descrição                  | Auth |
-| ------ | --------------- | -------------------------- | ---- |
-| GET    | `/contacts`     | Listar contatos do usuário | Sim  |
-| POST   | `/contacts`     | Criar contato              | Sim  |
-| DELETE | `/contacts/:id` | Soft delete do contato     | Sim  |
+| Método | Rota                            | Descrição                  | Auth |
+| ------ | ------------------------------- | -------------------------- | ---- |
+| GET    | `/contacts`                     | Listar contatos do usuário | Sim  |
+| GET    | `/contacts?includeDeleted=true` | Listar incluindo excluídos | Sim  |
+| POST   | `/contacts`                     | Criar contato              | Sim  |
+| DELETE | `/contacts/:id`                 | Soft delete do contato     | Sim  |
+| PATCH  | `/contacts/:id/restore`         | Restaurar contato excluído | Sim  |
 
 ---
 
 ## Decisões Técnicas
 
-### Soft Delete nos contatos
+### Soft Delete e Restauração de Contatos
 
-Em vez de deletar fisicamente os registros, o campo `deletedAt` é preenchido com o timestamp da exclusão. Isso permite auditoria e recuperação futura. A listagem filtra automaticamente por `deletedAt IS NULL`.
+Em vez de deletar fisicamente os registros, o campo `deletedAt` é preenchido com o timestamp da exclusão. Isso permite auditoria e recuperação futura.
+
+- A listagem padrão filtra por `deletedAt IS NULL`
+- Um checkbox **"Exibir excluídos"** permite visualizar também os contatos excluídos
+- Contatos excluídos são exibidos com fundo e fonte em vermelho para diferenciação visual
+- O botão **"Restaurar"** (azul) limpa o `deletedAt` e reativa o contato via workflow n8n dedicado (`restore-contact`)
 
 ### Armazenamento de tokens
 

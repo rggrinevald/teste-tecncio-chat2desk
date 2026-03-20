@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "DELETE",
-        "path": "contacts/:id",
+        "path": "contacts-delete",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -18,10 +18,8 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id FROM \"Contact\" WHERE id = $1 AND \"userId\" = $2",
-        "additionalFields": {
-          "queryParams": "={{ [$json.params.id, $json.headers['x-user-id']] }}"
-        }
+        "query": "SELECT id FROM \"Contact\" WHERE id = '{{ $node[\"Webhook\"].json.headers[\"x-contact-id\"] }}' AND \"userId\" = '{{ $node[\"Webhook\"].json.headers[\"x-user-id\"] }}'",
+        "additionalFields": {}
       },
       "id": "postgres-check",
       "name": "Check Ownership",
@@ -56,13 +54,11 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "DELETE FROM \"Contact\" WHERE id = $1 AND \"userId\" = $2",
-        "additionalFields": {
-          "queryParams": "={{ [$node['Webhook'].json.params.id, $node['Webhook'].json.headers['x-user-id']] }}"
-        }
+        "query": "UPDATE \"Contact\" SET \"deletedAt\" = NOW(), \"updatedAt\" = NOW() WHERE id = '{{ $node[\"Webhook\"].json.headers[\"x-contact-id\"] }}' AND \"userId\" = '{{ $node[\"Webhook\"].json.headers[\"x-user-id\"] }}'",
+        "additionalFields": {}
       },
       "id": "postgres-delete",
-      "name": "Delete Contact",
+      "name": "Soft Delete Contact",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
       "position": [900, 180],
@@ -70,6 +66,23 @@
         "postgres": {
           "id": "1",
           "name": "MiniCRM Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ 'contacts:' + $node['Webhook'].json.headers['x-user-id'] }}"
+      },
+      "id": "redis-invalidate-delete",
+      "name": "Invalidate Cache",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1120, 180],
+      "credentials": {
+        "redis": {
+          "id": "2",
+          "name": "MiniCRM Redis"
         }
       }
     },
@@ -84,7 +97,7 @@
       "name": "Respond 204",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1120, 180]
+      "position": [1340, 180]
     },
     {
       "parameters": {
@@ -103,25 +116,22 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [
-        [{ "node": "Check Ownership", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Check Ownership", "type": "main", "index": 0 }]]
     },
     "Check Ownership": {
-      "main": [
-        [{ "node": "Contact Exists?", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Contact Exists?", "type": "main", "index": 0 }]]
     },
     "Contact Exists?": {
       "main": [
-        [{ "node": "Delete Contact", "type": "main", "index": 0 }],
+        [{ "node": "Soft Delete Contact", "type": "main", "index": 0 }],
         [{ "node": "Respond 404", "type": "main", "index": 0 }]
       ]
     },
-    "Delete Contact": {
-      "main": [
-        [{ "node": "Respond 204", "type": "main", "index": 0 }]
-      ]
+    "Soft Delete Contact": {
+      "main": [[{ "node": "Invalidate Cache", "type": "main", "index": 0 }]]
+    },
+    "Invalidate Cache": {
+      "main": [[{ "node": "Respond 204", "type": "main", "index": 0 }]]
     }
   },
   "active": true,

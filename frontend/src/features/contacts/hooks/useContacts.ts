@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import axios from 'axios'
 import { api } from '../../../lib/axios'
 import type { Contact, CreateContactPayload } from '../types'
 
-export const useContacts = () => {
+export const useContacts = (includeDeleted: boolean = false) => {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -11,14 +12,20 @@ export const useContacts = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const { data } = await api.get<Contact[]>('/contacts')
+      const { data } = await api.get<Contact[]>('/contacts', {
+        params: { includeDeleted: includeDeleted ? 'true' : 'false' },
+      })
       setContacts(Array.isArray(data) ? data : [])
-    } catch {
-      setError('Erro ao carregar contatos. Tente novamente.')
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        setContacts([])
+      } else {
+        setError('Erro ao carregar contatos. Tente novamente.')
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [includeDeleted])
 
   const createContact = async (payload: CreateContactPayload): Promise<Contact> => {
     const { data } = await api.post<Contact>('/contacts', payload)
@@ -28,7 +35,15 @@ export const useContacts = () => {
 
   const deleteContact = async (id: string): Promise<void> => {
     await api.delete(`/contacts/${id}`)
-    setContacts((prev) => prev.filter((c) => c.id !== id))
+    await fetchContacts()
+  }
+
+  // Restaura um contato excluído (soft delete), limpando o campo deletedAt
+  const restoreContact = async (id: string): Promise<void> => {
+    await api.patch(`/contacts/${id}/restore`)
+    setContacts((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, deletedAt: null } : c))
+    )
   }
 
   useEffect(() => {
@@ -41,6 +56,7 @@ export const useContacts = () => {
     error,
     createContact,
     deleteContact,
+    restoreContact,
     refetch: fetchContacts,
   }
 }

@@ -9,7 +9,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 app.use('*', async (c, next) => {
   const corsMiddleware = cors({
     origin: c.env.CORS_ORIGIN ?? '*',
-    allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
     allowHeaders: ['Authorization', 'Content-Type'],
     exposeHeaders: ['Content-Length'],
     maxAge: 600,
@@ -23,11 +23,13 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 app.route('/auth', authRoutes)
 
 app.get('/contacts', authMiddleware, async (c) => {
+  const includeDeleted = c.req.query('includeDeleted') ?? 'false'
   const response = await fetch(`${c.env.N8N_URL}/webhook/contacts`, {
     method: 'GET',
     headers: {
       'x-user-id': c.get('userId'),
       'x-user-email': c.get('userEmail'),
+      'x-include-deleted': includeDeleted,
     },
   })
   const body = await response.arrayBuffer()
@@ -53,6 +55,20 @@ app.post('/contacts', authMiddleware, async (c) => {
     status: response.status,
     headers: { 'Content-Type': 'application/json' },
   })
+})
+
+// Restaura um contato excluído via soft delete, limpando o campo deletedAt
+app.patch('/contacts/:id/restore', authMiddleware, async (c) => {
+  const id = c.req.param('id')
+  const response = await fetch(`${c.env.N8N_URL}/webhook/contacts-restore`, {
+    method: 'PATCH',
+    headers: {
+      'x-user-id': c.get('userId'),
+      'x-user-email': c.get('userEmail'),
+      'x-contact-id': id,
+    },
+  })
+  return new Response(null, { status: response.status })
 })
 
 app.delete('/contacts/:id', authMiddleware, async (c) => {

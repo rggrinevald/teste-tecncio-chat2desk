@@ -6,6 +6,7 @@ export interface Contact {
   userId: string
   createdAt: string
   updatedAt: string
+  deletedAt?: string | null
 }
 
 export interface CreateContactPayload {

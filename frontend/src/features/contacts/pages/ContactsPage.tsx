@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ContactsTable } from '../components/ContactsTable'
 import { useContacts } from '../hooks/useContacts'
 import { useAuth } from '../../auth/hooks/useAuth'
 
 export const ContactsPage = () => {
-  const { contacts, isLoading, error, deleteContact } = useContacts()
+  const [includeDeleted, setIncludeDeleted] = useState(false)
+  const { contacts, isLoading, error, deleteContact, restoreContact } = useContacts(includeDeleted)
   const { logout } = useAuth()
 
   return (
@@ -13,7 +15,7 @@ export const ContactsPage = () => {
         <h1 className="text-xl font-bold text-gray-900">MiniCRM</h1>
         <button
           onClick={logout}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm text-gray-500 hover:text-red-600 hover:underline transition-all duration-200 cursor-pointer"
         >
           Sair
         </button>
@@ -29,12 +31,23 @@ export const ContactsPage = () => {
               </p>
             )}
           </div>
-          <Link
-            to="/contacts/new"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            Novo Contato
-          </Link>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => setIncludeDeleted(e.target.checked)}
+                className="w-4 h-4 accent-red-600"
+              />
+              Exibir excluídos
+            </label>
+            <Link
+              to="/contacts/new"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              Novo Contato
+            </Link>
+          </div>
         </div>
 
         {isLoading && (
@@ -48,7 +61,7 @@ export const ContactsPage = () => {
         )}
 
         {!isLoading && !error && (
-          <ContactsTable contacts={contacts} onDelete={deleteContact} />
+          <ContactsTable contacts={contacts} onDelete={deleteContact} onRestore={restoreContact} />
         )}
       </main>
     </div>

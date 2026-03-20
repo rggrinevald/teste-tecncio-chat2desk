@@ -35,16 +35,14 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO \"Contact\" (id, name, email, phone, \"userId\", \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), $1, NULLIF($2, ''), NULLIF($3, ''), $4, NOW(), NOW()) RETURNING *",
-        "additionalFields": {
-          "queryParams": "={{ [$json.body.name, $json.body.email || '', $json.body.phone || '', $json.headers['x-user-id']] }}"
-        }
+        "query": "INSERT INTO \"Contact\" (id, name, email, phone, \"userId\", \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '{{ $json.body.name }}', NULLIF('{{ $json.body.email }}', ''), NULLIF('{{ $json.body.phone }}', ''), '{{ $json.headers[\"x-user-id\"] }}', NOW(), NOW()) RETURNING *",
+        "additionalFields": {}
       },
       "id": "postgres-insert",
       "name": "Insert Contact",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [680, 200],
+      "position": [680, 180],
       "credentials": {
         "postgres": {
           "id": "1",
@@ -54,8 +52,25 @@
     },
     {
       "parameters": {
+        "operation": "delete",
+        "key": "={{ 'contacts:' + $node['Webhook'].json.headers['x-user-id'] }}"
+      },
+      "id": "redis-invalidate-create",
+      "name": "Invalidate Cache",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [900, 180],
+      "credentials": {
+        "redis": {
+          "id": "2",
+          "name": "MiniCRM Redis"
+        }
+      }
+    },
+    {
+      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ $json }}",
+        "responseBody": "={{ $node['Insert Contact'].json }}",
         "options": {
           "responseCode": 201
         }
@@ -64,7 +79,7 @@
       "name": "Respond 201",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [900, 200]
+      "position": [1120, 180]
     },
     {
       "parameters": {
@@ -83,9 +98,7 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [
-        [{ "node": "Validate Fields", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Validate Fields", "type": "main", "index": 0 }]]
     },
     "Validate Fields": {
       "main": [
@@ -94,9 +107,10 @@
       ]
     },
     "Insert Contact": {
-      "main": [
-        [{ "node": "Respond 201", "type": "main", "index": 0 }]
-      ]
+      "main": [[{ "node": "Invalidate Cache", "type": "main", "index": 0 }]]
+    },
+    "Invalidate Cache": {
+      "main": [[{ "node": "Respond 201", "type": "main", "index": 0 }]]
     }
   },
   "active": true,
