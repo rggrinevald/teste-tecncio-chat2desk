@@ -4,10 +4,12 @@ Sistema simplificado de gestão de contatos com autenticação, painel web e aut
 
 ## URLs de Produção
 
-| Serviço | URL |
-| ------- | --- |
-| Frontend | https://minicrm-frontend-39h.pages.dev |
-| API Gateway | https://minicrm-gateway-production.romulogrinevald.workers.dev |
+| Serviço | URL | Credenciais |
+| ------- | --- | ----------- |
+| Frontend | https://minicrm-frontend-39h.pages.dev | — |
+| API Gateway | https://minicrm-gateway-production.romulogrinevald.workers.dev | — |
+| n8n | https://dome-practices-budget-medicines.trycloudflare.com/home/workflows | admin@admin.com / Admin123 |
+| pgAdmin | https://thesaurus-martin-locked-bold.trycloudflare.com | admin@admin.com / admin |
 
 ## Arquitetura
 
@@ -246,6 +248,10 @@ Em vez de deletar fisicamente os registros, o campo `deletedAt` é preenchido co
 - Um checkbox **"Exibir excluídos"** permite visualizar também os contatos excluídos
 - Contatos excluídos são exibidos com fundo e fonte em vermelho para diferenciação visual
 - O botão **"Restaurar"** (azul) limpa o `deletedAt` e reativa o contato via workflow n8n dedicado (`restore-contact`)
+
+### pgAdmin para administração do banco
+
+O pgAdmin foi incluído no Docker Compose para facilitar a inspeção e administração do banco de dados PostgreSQL durante o desenvolvimento. Está acessível via Cloudflare Tunnel em produção, permitindo visualizar tabelas, executar queries e acompanhar os dados sem necessidade de acesso direto ao container.
 
 ### Armazenamento de tokens
 
