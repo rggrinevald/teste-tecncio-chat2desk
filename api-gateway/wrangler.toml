@@ -15,8 +15,8 @@ N8N_URL = "http://n8n.localhost"
 [env.production]
 [env.production.vars]
 CORS_ORIGIN = "https://minicrm-frontend-39h.pages.dev"
-AUTH_SERVICE_URL = "https://anthony-monica-bottle-telecommunications.trycloudflare.com"
-N8N_URL = "https://dome-practices-budget-medicines.trycloudflare.com"
+AUTH_SERVICE_URL = "https://downloaded-completely-determine-preparing.trycloudflare.com"
+N8N_URL = "https://pros-fraction-order-self.trycloudflare.com"
 
 # JWT_SECRET é configurado como secret via:
 # wrangler secret put JWT_SECRET
