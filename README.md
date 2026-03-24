@@ -8,8 +8,8 @@ Sistema simplificado de gestão de contatos com autenticação, painel web e aut
 | ------- | --- | ----------- |
 | Frontend | https://minicrm-frontend-39h.pages.dev | — |
 | API Gateway | https://minicrm-gateway-production.romulogrinevald.workers.dev | — |
-| n8n | https://pros-fraction-order-self.trycloudflare.com/home/workflows | admin@admin.com / Admin123 |
-| pgAdmin | https://creates-determine-maritime-volume.trycloudflare.com | admin@admin.com / admin |
+| n8n | https://licenses-one-canberra-era.trycloudflare.com/home/workflows | admin@admin.com / Admin123 |
+| pgAdmin | https://kelkoo-mat-minerals-expectations.trycloudflare.com | admin@admin.com / admin |
 
 ## Arquitetura
 
